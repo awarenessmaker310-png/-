@@ -1,1543 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>صانع وعي | مدير الميزانية الشهرية المتقدم</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .card-shadow {
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        .income-card {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-        .expense-card {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        }
-        .savings-card {
-            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        }
-        .investment-card {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-        }
-        .currency-selector {
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-        }
-        @media (max-width: 768px) {
-            .mobile-grid {
-                grid-template-columns: 1fr;
-            }
-            .mobile-text {
-                font-size: 1.5rem;
-            }
-            .mobile-card {
-                padding: 1rem;
-            }
-        }
-        .investment-idea {
-            transition: transform 0.3s ease;
-        }
-        .investment-idea:hover {
-            transform: translateY(-2px);
-        }
-        .tip-card {
-            border-left: 4px solid;
-            transition: all 0.3s ease;
-        }
-        .tip-card:hover {
-            transform: translateX(-5px);
-        }
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            max-width: 300px;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-        }
-        .notification.show {
-            transform: translateX(0);
-        }
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin: 20px 0;
-        }
-        .premium-feature {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 10px 0;
-        }
-        .export-btn {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-        .alert-card {
-            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
-        }
-    </style>
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Notification System -->
-    <div id="notificationContainer"></div>
-
-    <!-- Header -->
-    <header class="gradient-bg text-white p-4 md:p-6 card-shadow">
-        <div class="max-w-6xl mx-auto">
-            <div class="flex flex-col md:flex-row items-center justify-between mb-4">
-                <div class="text-center md:text-right mb-4 md:mb-0">
-                    <h1 class="text-2xl md:text-3xl font-bold mb-2">🧠 صانع وعي | مدير الميزانية المتقدم</h1>
-                    <p class="text-blue-100 text-sm md:text-base">تتبع مصروفاتك ومدخراتك واستثماراتك بوعي مالي + تقارير ذكية</p>
-                </div>
-                <div class="currency-selector p-3 rounded-lg">
-                    <label class="block text-sm font-medium mb-2">العملة:</label>
-                    <select id="currencySelector" class="bg-white text-gray-800 p-2 rounded border-0 focus:ring-2 focus:ring-blue-300">
-                        <option value="SAR">ريال سعودي (SAR)</option>
-                        <option value="USD">دولار أمريكي (USD)</option>
-                        <option value="IQD">دينار عراقي (IQD)</option>
-                        <option value="AED">درهم إماراتي (AED)</option>
-                        <option value="KWD">دينار كويتي (KWD)</option>
-                        <option value="BHD">دينار بحريني (BHD)</option>
-                        <option value="QAR">ريال قطري (QAR)</option>
-                        <option value="OMR">ريال عماني (OMR)</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Trial Status Banner -->
-    <div id="trialBanner">
-        <!-- Trial status will be inserted here -->
-    </div>
-
-    <!-- Enhanced Subscription Modal -->
-    <div id="subscriptionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden">
-        <div class="bg-white rounded-xl p-6 md:p-8 max-w-lg w-full mx-4 max-h-screen overflow-y-auto">
-            <div class="text-center">
-                <div class="text-6xl mb-4">⏰</div>
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">اختر خطة الاشتراك المناسبة</h2>
-                
-                <!-- Subscription Plans -->
-                <div class="space-y-4 mb-6">
-                    <!-- Basic Plan -->
-                    <div class="subscription-plan border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-all" data-plan="basic">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-lg font-bold text-gray-800">📊 الخطة الأساسية</h3>
-                            <div class="text-xl font-bold text-blue-600">2,000 د.ع</div>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-3">شهرياً</p>
-                        <div class="text-right text-sm text-gray-700 space-y-1">
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>تتبع المصروفات والواردات</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>إدارة المدخرات</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>دعم جميع العملات</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Premium Plan -->
-                    <div class="subscription-plan border-2 border-purple-500 bg-purple-50 rounded-lg p-4 cursor-pointer relative" data-plan="premium">
-                        <div class="absolute -top-2 -right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">الأكثر شعبية</div>
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-lg font-bold text-purple-800">💎 الخطة المتقدمة</h3>
-                            <div class="text-xl font-bold text-purple-600">3,500 د.ع</div>
-                        </div>
-                        <p class="text-sm text-purple-600 mb-3">شهرياً</p>
-                        <div class="text-right text-sm text-gray-700 space-y-1">
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>جميع ميزات الخطة الأساسية</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>تقارير بيانية ملونة</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>تصدير إلى Excel</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>تنبيهات ذكية</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>أفكار استثمارية متقدمة</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Enterprise Plan -->
-                    <div class="subscription-plan border-2 border-gold-500 bg-yellow-50 rounded-lg p-4 cursor-pointer" data-plan="enterprise">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-lg font-bold text-yellow-800">🏆 خطة الأعمال</h3>
-                            <div class="text-xl font-bold text-yellow-600">5,000 د.ع</div>
-                        </div>
-                        <p class="text-sm text-yellow-600 mb-3">شهرياً</p>
-                        <div class="text-right text-sm text-gray-700 space-y-1">
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>جميع ميزات الخطة المتقدمة</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>تقارير تفصيلية متقدمة</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>دعم فني مخصص</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>نسخ احتياطية سحابية</span></div>
-                            <div class="flex items-center"><span class="text-green-500 ml-2">✓</span><span>تحليلات مالية متقدمة</span></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="space-y-3">
-                    <button onclick="handleSubscription()" class="subscription-btn w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all pulse-animation">
-                        اشترك الآن
-                    </button>
-                    <p class="text-xs text-gray-500">يمكنك إلغاء الاشتراك في أي وقت</p>
-                    <p class="text-xs text-gray-400">دفع آمن ومشفر 🔒</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="max-w-6xl mx-auto p-4 md:p-6">
-        <!-- Enhanced Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-            <div class="income-card text-white p-4 md:p-6 rounded-xl card-shadow mobile-card">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm md:text-lg font-semibold">إجمالي الواردات</h3>
-                        <p class="text-lg md:text-2xl font-bold mobile-text" id="totalIncome">0</p>
-                        <p class="text-xs opacity-80" id="incomeGrowth">+0% من الشهر الماضي</p>
-                    </div>
-                    <div class="text-2xl md:text-3xl">📈</div>
-                </div>
-            </div>
-            
-            <div class="expense-card text-white p-4 md:p-6 rounded-xl card-shadow mobile-card">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm md:text-lg font-semibold">إجمالي المصروفات</h3>
-                        <p class="text-lg md:text-2xl font-bold mobile-text" id="totalExpenses">0</p>
-                        <p class="text-xs opacity-80" id="expenseGrowth">+0% من الشهر الماضي</p>
-                    </div>
-                    <div class="text-2xl md:text-3xl">💸</div>
-                </div>
-            </div>
-            
-            <div class="savings-card text-gray-800 p-4 md:p-6 rounded-xl card-shadow mobile-card">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm md:text-lg font-semibold">المدخرات</h3>
-                        <p class="text-lg md:text-2xl font-bold mobile-text" id="totalSavings">0</p>
-                        <p class="text-xs opacity-80" id="savingsGrowth">+0% من الشهر الماضي</p>
-                    </div>
-                    <div class="text-2xl md:text-3xl">🏦</div>
-                </div>
-            </div>
-            
-            <div class="investment-card text-gray-800 p-4 md:p-6 rounded-xl card-shadow mobile-card">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm md:text-lg font-semibold">الاستثمارات</h3>
-                        <p class="text-lg md:text-2xl font-bold mobile-text" id="totalInvestments">0</p>
-                        <p class="text-xs opacity-80" id="investmentGrowth">+0% من الشهر الماضي</p>
-                    </div>
-                    <div class="text-2xl md:text-3xl">📊</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Balance Display with Chart -->
-        <div class="bg-white p-4 md:p-6 rounded-xl card-shadow mb-6 md:mb-8">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="text-center">
-                    <h2 class="text-xl md:text-2xl font-bold mb-4">الرصيد المتبقي</h2>
-                    <p class="text-2xl md:text-4xl font-bold" id="remainingBalance">0</p>
-                    <div class="mt-4 h-3 md:h-4 bg-gray-200 rounded-full overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-500" id="balanceBar" style="width: 0%"></div>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="balanceChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Export and Alerts Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Export Section -->
-            <div class="export-btn text-white p-6 rounded-xl card-shadow">
-                <h3 class="text-xl font-bold mb-4 flex items-center">
-                    <span class="mr-3">📊</span>
-                    تصدير البيانات
-                </h3>
-                <p class="text-sm opacity-90 mb-4">احصل على تقرير شامل بجميع بياناتك المالية</p>
-                <div class="space-y-3">
-                    <button onclick="exportToExcel()" class="w-full bg-white text-purple-600 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                        📈 تصدير إلى Excel
-                    </button>
-                    <button onclick="exportToPDF()" class="w-full bg-white text-purple-600 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                        📄 تصدير إلى PDF
-                    </button>
-                </div>
-            </div>
-
-            <!-- Alerts Section -->
-            <div class="alert-card text-gray-800 p-6 rounded-xl card-shadow">
-                <h3 class="text-xl font-bold mb-4 flex items-center">
-                    <span class="mr-3">🔔</span>
-                    التنبيهات الذكية
-                </h3>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm">تنبيه عند تجاوز الميزانية</span>
-                        <input type="checkbox" id="budgetAlert" class="toggle-switch">
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm">تذكير بالفواتير الشهرية</span>
-                        <input type="checkbox" id="billReminder" class="toggle-switch">
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm">تنبيه أهداف الادخار</span>
-                        <input type="checkbox" id="savingsAlert" class="toggle-switch">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Charts Section -->
-        <div class="bg-white p-4 md:p-6 rounded-xl card-shadow mb-6 md:mb-8">
-            <h3 class="text-lg md:text-xl font-bold mb-4">📊 التقارير البيانية التفاعلية</h3>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="chart-container">
-                    <h4 class="text-center font-semibold mb-2">توزيع المصروفات</h4>
-                    <canvas id="expenseChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h4 class="text-center font-semibold mb-2">نمو الاستثمارات</h4>
-                    <canvas id="investmentChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Tabs -->
-        <div class="bg-white rounded-xl card-shadow mb-6 md:mb-8">
-            <div class="flex border-b overflow-x-auto">
-                <button class="tab-btn flex-1 py-3 md:py-4 px-2 md:px-6 text-center font-semibold border-b-2 border-blue-500 text-blue-600 text-xs md:text-base whitespace-nowrap" data-tab="income">
-                    📈 الواردات
-                </button>
-                <button class="tab-btn flex-1 py-3 md:py-4 px-2 md:px-6 text-center font-semibold text-gray-500 hover:text-blue-600 text-xs md:text-base whitespace-nowrap" data-tab="expenses">
-                    💸 المصروفات
-                </button>
-                <button class="tab-btn flex-1 py-3 md:py-4 px-2 md:px-6 text-center font-semibold text-gray-500 hover:text-blue-600 text-xs md:text-base whitespace-nowrap" data-tab="savings">
-                    🏦 المدخرات
-                </button>
-                <button class="tab-btn flex-1 py-3 md:py-4 px-2 md:px-6 text-center font-semibold text-gray-500 hover:text-blue-600 text-xs md:text-base whitespace-nowrap" data-tab="investments">
-                    📊 الاستثمارات
-                </button>
-                <button class="tab-btn flex-1 py-3 md:py-4 px-2 md:px-6 text-center font-semibold text-gray-500 hover:text-blue-600 text-xs md:text-base whitespace-nowrap" data-tab="bills">
-                    📋 الفواتير
-                </button>
-            </div>
-
-            <!-- Income Tab -->
-            <div id="income-tab" class="tab-content p-4 md:p-6">
-                <h3 class="text-lg md:text-xl font-bold mb-4">إضافة وارد جديد</h3>
-                <form id="incomeForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-                    <input type="text" id="incomeSource" placeholder="مصدر الدخل" class="p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base" required>
-                    <input type="number" id="incomeAmount" placeholder="المبلغ" class="p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base" required>
-                    <select id="incomeFrequency" class="p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
-                        <option value="daily">يومي</option>
-                        <option value="weekly">أسبوعي</option>
-                        <option value="monthly" selected>شهري</option>
-                    </select>
-                    <button type="submit" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base font-semibold">إضافة</button>
-                </form>
-                
-                <div id="incomeList" class="space-y-3">
-                    <!-- Income items will be added here -->
-                </div>
-            </div>
-
-            <!-- Expenses Tab -->
-            <div id="expenses-tab" class="tab-content p-4 md:p-6 hidden">
-                <h3 class="text-lg md:text-xl font-bold mb-4">إضافة مصروف جديد</h3>
-                <form id="expenseForm" class="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4 mb-6">
-                    <input type="text" id="expenseCategory" placeholder="فئة المصروف" class="p-3 border rounded-lg focus:ring-2 focus:ring-red-500 text-sm md:text-base" required>
-                    <input type="text" id="expenseDescription" placeholder="الوصف" class="p-3 border rounded-lg focus:ring-2 focus:ring-red-500 text-sm md:text-base" required>
-                    <input type="number" id="expenseAmount" placeholder="المبلغ" class="p-3 border rounded-lg focus:ring-2 focus:ring-red-500 text-sm md:text-base" required>
-                    <select id="expenseFrequency" class="p-3 border rounded-lg focus:ring-2 focus:ring-red-500 text-sm md:text-base">
-                        <option value="daily">يومي</option>
-                        <option value="weekly">أسبوعي</option>
-                        <option value="monthly" selected>شهري</option>
-                    </select>
-                    <button type="submit" class="bg-red-600 text-white p-3 rounded-lg hover:bg-red-700 transition-colors text-sm md:text-base font-semibold">إضافة</button>
-                </form>
-                
-                <div id="expenseList" class="space-y-3">
-                    <!-- Expense items will be added here -->
-                </div>
-            </div>
-
-            <!-- Savings Tab -->
-            <div id="savings-tab" class="tab-content p-4 md:p-6 hidden">
-                <h3 class="text-lg md:text-xl font-bold mb-4">إضافة مدخرات</h3>
-                <form id="savingsForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-                    <input type="text" id="savingsGoal" placeholder="هدف الادخار" class="p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm md:text-base" required>
-                    <input type="number" id="savingsAmount" placeholder="المبلغ" class="p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm md:text-base" required>
-                    <select id="savingsFrequency" class="p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm md:text-base">
-                        <option value="daily">يومي</option>
-                        <option value="weekly">أسبوعي</option>
-                        <option value="monthly" selected>شهري</option>
-                    </select>
-                    <button type="submit" class="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base font-semibold">إضافة</button>
-                </form>
-                
-                <div id="savingsList" class="space-y-3">
-                    <!-- Savings items will be added here -->
-                </div>
-            </div>
-
-            <!-- Investments Tab -->
-            <div id="investments-tab" class="tab-content p-4 md:p-6 hidden">
-                <h3 class="text-lg md:text-xl font-bold mb-4">إضافة استثمار</h3>
-                <form id="investmentForm" class="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4 mb-6">
-                    <input type="text" id="investmentType" placeholder="نوع الاستثمار" class="p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base" required>
-                    <input type="text" id="investmentDescription" placeholder="الوصف" class="p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base" required>
-                    <input type="number" id="investmentAmount" placeholder="المبلغ" class="p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base" required>
-                    <select id="investmentFrequency" class="p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base">
-                        <option value="daily">يومي</option>
-                        <option value="weekly">أسبوعي</option>
-                        <option value="monthly" selected>شهري</option>
-                    </select>
-                    <button type="submit" class="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors text-sm md:text-base font-semibold">إضافة</button>
-                </form>
-                
-                <div id="investmentList" class="space-y-3">
-                    <!-- Investment items will be added here -->
-                </div>
-            </div>
-
-            <!-- Bills Tab -->
-            <div id="bills-tab" class="tab-content p-4 md:p-6 hidden">
-                <h3 class="text-lg md:text-xl font-bold mb-4">إدارة الفواتير</h3>
-                <form id="billForm" class="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4 mb-6">
-                    <input type="text" id="billName" placeholder="اسم الفاتورة" class="p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 text-sm md:text-base" required>
-                    <input type="number" id="billAmount" placeholder="المبلغ" class="p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 text-sm md:text-base" required>
-                    <input type="date" id="billDueDate" class="p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 text-sm md:text-base" required>
-                    <select id="billFrequency" class="p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 text-sm md:text-base">
-                        <option value="monthly" selected>شهري</option>
-                        <option value="quarterly">ربع سنوي</option>
-                        <option value="yearly">سنوي</option>
-                    </select>
-                    <button type="submit" class="bg-orange-600 text-white p-3 rounded-lg hover:bg-orange-700 transition-colors text-sm md:text-base font-semibold">إضافة</button>
-                </form>
-                
-                <div id="billList" class="space-y-3">
-                    <!-- Bill items will be added here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Investment Ideas -->
-        <div class="bg-white p-4 md:p-6 rounded-xl card-shadow mb-6 md:mb-8">
-            <h3 class="text-lg md:text-xl font-bold mb-4">💰 أفكار استثمارية متقدمة</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="investment-idea bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                    <div class="flex items-center mb-3">
-                        <span class="text-2xl mr-3">📈</span>
-                        <h4 class="font-semibold text-blue-800">الأسهم والصناديق</h4>
-                    </div>
-                    <p class="text-sm text-blue-700 mb-2">استثمر في الأسهم المحلية والعالمية</p>
-                    <div class="text-xs text-blue-600">
-                        <span class="font-medium">المخاطر:</span> متوسطة إلى عالية<br>
-                        <span class="font-medium">العائد المتوقع:</span> 8-15% سنوياً
-                    </div>
-                    <button onclick="addInvestmentIdea('الأسهم والصناديق', 1000)" class="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">إضافة للمحفظة</button>
-                </div>
-                
-                <div class="investment-idea bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
-                    <div class="flex items-center mb-3">
-                        <span class="text-2xl mr-3">🏠</span>
-                        <h4 class="font-semibold text-green-800">العقارات</h4>
-                    </div>
-                    <p class="text-sm text-green-700 mb-2">الاستثمار في العقارات السكنية والتجارية</p>
-                    <div class="text-xs text-green-600">
-                        <span class="font-medium">المخاطر:</span> منخفضة إلى متوسطة<br>
-                        <span class="font-medium">العائد المتوقع:</span> 5-12% سنوياً
-                    </div>
-                    <button onclick="addInvestmentIdea('العقارات', 5000)" class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">إضافة للمحفظة</button>
-                </div>
-                
-                <div class="investment-idea bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                    <div class="flex items-center mb-3">
-                        <span class="text-2xl mr-3">🥇</span>
-                        <h4 class="font-semibold text-yellow-800">الذهب والمعادن</h4>
-                    </div>
-                    <p class="text-sm text-yellow-700 mb-2">حماية من التضخم والأزمات الاقتصادية</p>
-                    <div class="text-xs text-yellow-600">
-                        <span class="font-medium">المخاطر:</span> منخفضة<br>
-                        <span class="font-medium">العائد المتوقع:</span> 3-8% سنوياً
-                    </div>
-                    <button onclick="addInvestmentIdea('الذهب والمعادن', 2000)" class="mt-2 bg-yellow-600 text-white px-3 py-1 rounded text-xs hover:bg-yellow-700">إضافة للمحفظة</button>
-                </div>
-                
-                <div class="investment-idea bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-                    <div class="flex items-center mb-3">
-                        <span class="text-2xl mr-3">💼</span>
-                        <h4 class="font-semibold text-purple-800">المشاريع الصغيرة</h4>
-                    </div>
-                    <p class="text-sm text-purple-700 mb-2">ابدأ مشروعك الخاص أو شارك في مشاريع</p>
-                    <div class="text-xs text-purple-600">
-                        <span class="font-medium">المخاطر:</span> عالية<br>
-                        <span class="font-medium">العائد المتوقع:</span> 15-50% سنوياً
-                    </div>
-                    <button onclick="addInvestmentIdea('المشاريع الصغيرة', 3000)" class="mt-2 bg-purple-600 text-white px-3 py-1 rounded text-xs hover:bg-purple-700">إضافة للمحفظة</button>
-                </div>
-                
-                <div class="investment-idea bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-lg border border-indigo-200">
-                    <div class="flex items-center mb-3">
-                        <span class="text-2xl mr-3">🏦</span>
-                        <h4 class="font-semibold text-indigo-800">الودائع البنكية</h4>
-                    </div>
-                    <p class="text-sm text-indigo-700 mb-2">استثمار آمن بعوائد ثابتة</p>
-                    <div class="text-xs text-indigo-600">
-                        <span class="font-medium">المخاطر:</span> منخفضة جداً<br>
-                        <span class="font-medium">العائد المتوقع:</span> 2-5% سنوياً
-                    </div>
-                    <button onclick="addInvestmentIdea('الودائع البنكية', 1500)" class="mt-2 bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700">إضافة للمحفظة</button>
-                </div>
-                
-                <div class="investment-idea bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-teal-200">
-                    <div class="flex items-center mb-3">
-                        <span class="text-2xl mr-3">🎓</span>
-                        <h4 class="font-semibold text-teal-800">التعليم والمهارات</h4>
-                    </div>
-                    <p class="text-sm text-teal-700 mb-2">استثمر في نفسك وطور مهاراتك</p>
-                    <div class="text-xs text-teal-600">
-                        <span class="font-medium">المخاطر:</span> منخفضة<br>
-                        <span class="font-medium">العائد المتوقع:</span> عوائد طويلة المدى
-                    </div>
-                    <button onclick="addInvestmentIdea('التعليم والمهارات', 500)" class="mt-2 bg-teal-600 text-white px-3 py-1 rounded text-xs hover:bg-teal-700">إضافة للمحفظة</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Financial Tips -->
-        <div class="bg-white p-4 md:p-6 rounded-xl card-shadow mb-6 md:mb-8">
-            <h3 class="text-lg md:text-xl font-bold mb-4">💡 نصائح مالية ذكية متقدمة</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="tip-card bg-blue-50 p-4 rounded-lg border-blue-400">
-                    <h4 class="font-semibold text-blue-800 mb-2 flex items-center">
-                        <span class="mr-2">📊</span>
-                        قاعدة 50/30/20
-                    </h4>
-                    <p class="text-sm text-blue-700">50% للضروريات (إيجار، طعام، فواتير)، 30% للرغبات (ترفيه، تسوق)، 20% للمدخرات والاستثمار</p>
-                    <button onclick="applyBudgetRule()" class="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">تطبيق القاعدة</button>
-                </div>
-                
-                <div class="tip-card bg-green-50 p-4 rounded-lg border-green-400">
-                    <h4 class="font-semibold text-green-800 mb-2 flex items-center">
-                        <span class="mr-2">🚨</span>
-                        صندوق الطوارئ
-                    </h4>
-                    <p class="text-sm text-green-700">احتفظ بمدخرات تكفي لـ 3-6 أشهر من المصروفات الأساسية لمواجهة الظروف الطارئة</p>
-                    <button onclick="calculateEmergencyFund()" class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">حساب المبلغ المطلوب</button>
-                </div>
-                
-                <div class="tip-card bg-purple-50 p-4 rounded-lg border-purple-400">
-                    <h4 class="font-semibold text-purple-800 mb-2 flex items-center">
-                        <span class="mr-2">⏰</span>
-                        الاستثمار المبكر
-                    </h4>
-                    <p class="text-sm text-purple-700">ابدأ الاستثمار مبكراً للاستفادة من قوة التراكم المركب، حتى لو بمبالغ صغيرة</p>
-                    <button onclick="showCompoundCalculator()" class="mt-2 bg-purple-600 text-white px-3 py-1 rounded text-xs hover:bg-purple-700">حاسبة التراكم المركب</button>
-                </div>
-                
-                <div class="tip-card bg-orange-50 p-4 rounded-lg border-orange-400">
-                    <h4 class="font-semibold text-orange-800 mb-2 flex items-center">
-                        <span class="mr-2">🎯</span>
-                        تنويع الاستثمارات
-                    </h4>
-                    <p class="text-sm text-orange-700">لا تضع كل أموالك في استثمار واحد، وزع استثماراتك لتقليل المخاطر</p>
-                    <button onclick="analyzePortfolio()" class="mt-2 bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700">تحليل المحفظة</button>
-                </div>
-                
-                <div class="tip-card bg-red-50 p-4 rounded-lg border-red-400">
-                    <h4 class="font-semibold text-red-800 mb-2 flex items-center">
-                        <span class="mr-2">💳</span>
-                        تجنب الديون الاستهلاكية
-                    </h4>
-                    <p class="text-sm text-red-700">تجنب استخدام بطاقات الائتمان للشراء الاستهلاكي، وسدد ديونك بأسرع وقت ممكن</p>
-                    <button onclick="debtCalculator()" class="mt-2 bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">حاسبة سداد الديون</button>
-                </div>
-                
-                <div class="tip-card bg-teal-50 p-4 rounded-lg border-teal-400">
-                    <h4 class="font-semibold text-teal-800 mb-2 flex items-center">
-                        <span class="mr-2">📝</span>
-                        تتبع المصروفات
-                    </h4>
-                    <p class="text-sm text-teal-700">راقب مصروفاتك بانتظام واستخدم تطبيقات الميزانية لفهم أنماط إنفاقك</p>
-                    <button onclick="generateSpendingReport()" class="mt-2 bg-teal-600 text-white px-3 py-1 rounded text-xs hover:bg-teal-700">تقرير الإنفاق</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- AI Financial Assistant -->
-        <div class="premium-feature mb-8">
-            <h3 class="text-xl font-bold mb-4 flex items-center">
-                <span class="mr-3">🤖</span>
-                المساعد المالي الذكي
-            </h3>
-            <p class="text-sm opacity-90 mb-4">احصل على نصائح مخصصة بناءً على بياناتك المالية</p>
-            <div class="bg-white bg-opacity-20 p-4 rounded-lg">
-                <div id="aiAdvice" class="text-sm mb-4">
-                    مرحباً! أنا مساعدك المالي الذكي. سأقوم بتحليل بياناتك وتقديم نصائح مخصصة لك.
-                </div>
-                <button onclick="getAIAdvice()" class="bg-white text-purple-600 px-4 py-2 rounded font-semibold hover:bg-gray-100">
-                    احصل على نصيحة ذكية
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Enhanced data storage
-        let budgetData = {
-            income: [],
-            expenses: [],
-            savings: [],
-            investments: [],
-            bills: [],
-            currency: 'SAR',
-            alerts: {
-                budgetAlert: false,
-                billReminder: false,
-                savingsAlert: false
-            },
-            subscriptionPlan: 'basic'
-        };
-
-        // Subscription management
-        let subscriptionData = {
-            startDate: null,
-            isSubscribed: false,
-            trialEnded: false,
-            plan: 'basic'
-        };
-
-        // Charts storage
-        let charts = {};
-
-        // Initialize subscription on first use
-        function initializeSubscription() {
-            const saved = localStorage.getItem('subscriptionData');
-            if (saved) {
-                subscriptionData = JSON.parse(saved);
-            } else {
-                subscriptionData.startDate = new Date().toISOString();
-                subscriptionData.isSubscribed = false;
-                subscriptionData.trialEnded = false;
-                saveSubscriptionData();
-            }
-            checkSubscriptionStatus();
-        }
-
-        // Save subscription data
-        function saveSubscriptionData() {
-            localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
-        }
-
-        // Check subscription status
-        function checkSubscriptionStatus() {
-            if (!subscriptionData.startDate) return;
-            
-            const startDate = new Date(subscriptionData.startDate);
-            const currentDate = new Date();
-            const daysPassed = Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24));
-            
-            if (daysPassed >= 30 && !subscriptionData.isSubscribed) {
-                subscriptionData.trialEnded = true;
-                saveSubscriptionData();
-                showSubscriptionModal();
-            } else if (daysPassed < 30) {
-                updateTrialStatus(30 - daysPassed);
-            }
-        }
-
-        // Update trial status display
-        function updateTrialStatus(daysLeft) {
-            const trialBanner = document.getElementById('trialBanner');
-            if (trialBanner) {
-                trialBanner.innerHTML = `
-                    <div class="bg-gradient-to-r from-green-500 to-blue-500 text-white p-3 text-center">
-                        <span class="font-semibold">🎉 الفترة التجريبية المجانية: ${daysLeft} يوم متبقي</span>
-                        <button onclick="showSubscriptionModal()" class="mr-4 bg-white text-blue-600 px-3 py-1 rounded text-sm font-semibold hover:bg-gray-100">
-                            اشترك الآن
-                        </button>
-                    </div>
-                `;
-            }
-        }
-
-        // Show subscription modal
-        function showSubscriptionModal() {
-            const modal = document.getElementById('subscriptionModal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                if (subscriptionData.trialEnded) {
-                    disableAppFunctionality();
-                }
-            }
-        }
-
-        // Hide subscription modal
-        function hideSubscriptionModal() {
-            const modal = document.getElementById('subscriptionModal');
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-        }
-
-        // Disable app functionality
-        function disableAppFunctionality() {
-            const forms = document.querySelectorAll('form');
-            forms.forEach(form => {
-                form.style.opacity = '0.5';
-                form.style.pointerEvents = 'none';
-            });
-            
-            const buttons = document.querySelectorAll('button:not(.subscription-btn)');
-            buttons.forEach(btn => {
-                if (!btn.onclick || !btn.onclick.toString().includes('handleSubscription')) {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.5';
-                }
-            });
-        }
-
-        // Enable app functionality
-        function enableAppFunctionality() {
-            const forms = document.querySelectorAll('form');
-            forms.forEach(form => {
-                form.style.opacity = '1';
-                form.style.pointerEvents = 'auto';
-            });
-            
-            const buttons = document.querySelectorAll('button:not(.subscription-btn)');
-            buttons.forEach(btn => {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-            });
-        }
-
-        // Handle subscription with plan selection
-        function handleSubscription() {
-            const selectedPlan = document.querySelector('.subscription-plan.border-purple-500')?.dataset.plan || 'premium';
-            const planPrices = {
-                basic: 2000,
-                premium: 3500,
-                enterprise: 5000
-            };
-            
-            const confirmed = confirm(`سيتم توجيهك إلى صفحة الدفع الآمنة لإتمام الاشتراك في الخطة ${selectedPlan === 'basic' ? 'الأساسية' : selectedPlan === 'premium' ? 'المتقدمة' : 'الأعمال'} بمبلغ ${planPrices[selectedPlan]} دينار عراقي شهرياً.\n\nهل تريد المتابعة؟`);
-            
-            if (confirmed) {
-                subscriptionData.isSubscribed = true;
-                subscriptionData.trialEnded = false;
-                subscriptionData.plan = selectedPlan;
-                budgetData.subscriptionPlan = selectedPlan;
-                saveSubscriptionData();
-                saveData();
-                hideSubscriptionModal();
-                enableAppFunctionality();
-                updateSubscriptionStatus();
-                
-                showNotification('🎉 تم تفعيل اشتراكك بنجاح!', 'success');
-                
-                // Enable premium features based on plan
-                enablePremiumFeatures(selectedPlan);
-            }
-        }
-
-        // Enable premium features
-        function enablePremiumFeatures(plan) {
-            if (plan === 'premium' || plan === 'enterprise') {
-                initializeCharts();
-                enableExportFeatures();
-                enableSmartAlerts();
-            }
-            
-            if (plan === 'enterprise') {
-                enableAdvancedReports();
-            }
-        }
-
-        // Update subscription status
-        function updateSubscriptionStatus() {
-            const trialBanner = document.getElementById('trialBanner');
-            if (subscriptionData.isSubscribed) {
-                const planName = subscriptionData.plan === 'basic' ? 'الأساسية' : 
-                                subscriptionData.plan === 'premium' ? 'المتقدمة' : 'الأعمال';
-                trialBanner.innerHTML = `
-                    <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-3 text-center">
-                        <span class="font-semibold">✅ مشترك نشط - الخطة ${planName} - استمتع بجميع الميزات!</span>
-                    </div>
-                `;
-            }
-        }
-
-        // Plan selection handler
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.subscription-plan')) {
-                document.querySelectorAll('.subscription-plan').forEach(plan => {
-                    plan.classList.remove('border-purple-500', 'bg-purple-50');
-                    plan.classList.add('border-gray-200');
-                });
-                
-                const selectedPlan = e.target.closest('.subscription-plan');
-                selectedPlan.classList.add('border-purple-500', 'bg-purple-50');
-                selectedPlan.classList.remove('border-gray-200');
-            }
-        });
-
-        // Notification system
-        function showNotification(message, type = 'info') {
-            const container = document.getElementById('notificationContainer');
-            const notification = document.createElement('div');
-            
-            const colors = {
-                success: 'bg-green-500',
-                error: 'bg-red-500',
-                warning: 'bg-yellow-500',
-                info: 'bg-blue-500'
-            };
-            
-            notification.className = `notification ${colors[type]} text-white p-4 rounded-lg shadow-lg`;
-            notification.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">✕</button>
-                </div>
-            `;
-            
-            container.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.classList.add('show');
-            }, 100);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 5000);
-        }
-
-        // Currency symbols and names
-        const currencies = {
-            'SAR': { symbol: 'ريال', name: 'ريال سعودي' },
-            'USD': { symbol: '$', name: 'دولار أمريكي' },
-            'IQD': { symbol: 'د.ع', name: 'دينار عراقي' },
-            'AED': { symbol: 'درهم', name: 'درهم إماراتي' },
-            'KWD': { symbol: 'د.ك', name: 'دينار كويتي' },
-            'BHD': { symbol: 'د.ب', name: 'دينار بحريني' },
-            'QAR': { symbol: 'ر.ق', name: 'ريال قطري' },
-            'OMR': { symbol: 'ر.ع', name: 'ريال عماني' }
-        };
-
-        // Get current currency symbol
-        function getCurrencySymbol() {
-            return currencies[budgetData.currency]?.symbol || 'ريال';
-        }
-
-        // Format amount with currency
-        function formatAmount(amount) {
-            return `${amount.toLocaleString()} ${getCurrencySymbol()}`;
-        }
-
-        // Load data from localStorage
-        function loadData() {
-            const saved = localStorage.getItem('budgetData');
-            if (saved) {
-                budgetData = JSON.parse(saved);
-                document.getElementById('currencySelector').value = budgetData.currency || 'SAR';
-                
-                // Load alert settings
-                if (budgetData.alerts) {
-                    document.getElementById('budgetAlert').checked = budgetData.alerts.budgetAlert;
-                    document.getElementById('billReminder').checked = budgetData.alerts.billReminder;
-                    document.getElementById('savingsAlert').checked = budgetData.alerts.savingsAlert;
-                }
-                
-                updateAllDisplays();
-            }
-        }
-
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem('budgetData', JSON.stringify(budgetData));
-        }
-
-        // Convert frequency to monthly multiplier
-        function getMonthlyMultiplier(frequency) {
-            switch(frequency) {
-                case 'daily': return 30;
-                case 'weekly': return 4.33;
-                case 'monthly': return 1;
-                case 'quarterly': return 0.33;
-                case 'yearly': return 0.083;
-                default: return 1;
-            }
-        }
-
-        // Calculate monthly totals
-        function calculateTotals() {
-            const totalIncome = budgetData.income.reduce((sum, item) => 
-                sum + (item.amount * getMonthlyMultiplier(item.frequency)), 0);
-            
-            const totalExpenses = budgetData.expenses.reduce((sum, item) => 
-                sum + (item.amount * getMonthlyMultiplier(item.frequency)), 0);
-            
-            const totalSavings = budgetData.savings.reduce((sum, item) => 
-                sum + (item.amount * getMonthlyMultiplier(item.frequency)), 0);
-            
-            const totalInvestments = budgetData.investments.reduce((sum, item) => 
-                sum + (item.amount * getMonthlyMultiplier(item.frequency)), 0);
-
-            const totalBills = budgetData.bills.reduce((sum, item) => 
-                sum + (item.amount * getMonthlyMultiplier(item.frequency)), 0);
-
-            return { totalIncome, totalExpenses, totalSavings, totalInvestments, totalBills };
-        }
-
-        // Update summary cards with growth indicators
-        function updateSummary() {
-            const { totalIncome, totalExpenses, totalSavings, totalInvestments } = calculateTotals();
-            
-            document.getElementById('totalIncome').textContent = formatAmount(totalIncome);
-            document.getElementById('totalExpenses').textContent = formatAmount(totalExpenses);
-            document.getElementById('totalSavings').textContent = formatAmount(totalSavings);
-            document.getElementById('totalInvestments').textContent = formatAmount(totalInvestments);
-            
-            // Calculate growth (simulated for demo)
-            const incomeGrowth = Math.floor(Math.random() * 20) - 10;
-            const expenseGrowth = Math.floor(Math.random() * 15) - 5;
-            const savingsGrowth = Math.floor(Math.random() * 25) - 5;
-            const investmentGrowth = Math.floor(Math.random() * 30) - 10;
-            
-            document.getElementById('incomeGrowth').textContent = `${incomeGrowth >= 0 ? '+' : ''}${incomeGrowth}% من الشهر الماضي`;
-            document.getElementById('expenseGrowth').textContent = `${expenseGrowth >= 0 ? '+' : ''}${expenseGrowth}% من الشهر الماضي`;
-            document.getElementById('savingsGrowth').textContent = `${savingsGrowth >= 0 ? '+' : ''}${savingsGrowth}% من الشهر الماضي`;
-            document.getElementById('investmentGrowth').textContent = `${investmentGrowth >= 0 ? '+' : ''}${investmentGrowth}% من الشهر الماضي`;
-            
-            const remainingBalance = totalIncome - totalExpenses - totalSavings - totalInvestments;
-            document.getElementById('remainingBalance').textContent = formatAmount(remainingBalance);
-            document.getElementById('remainingBalance').className = remainingBalance >= 0 ? 'text-2xl md:text-4xl font-bold text-green-600' : 'text-2xl md:text-4xl font-bold text-red-600';
-            
-            // Update balance bar
-            const balancePercentage = totalIncome > 0 ? Math.max(0, (remainingBalance / totalIncome) * 100) : 0;
-            document.getElementById('balanceBar').style.width = `${Math.min(100, balancePercentage)}%`;
-            
-            // Check for alerts
-            checkAlerts(totalExpenses, totalIncome, totalSavings);
-        }
-
-        // Check and trigger alerts
-        function checkAlerts(expenses, income, savings) {
-            if (budgetData.alerts.budgetAlert && expenses > income * 0.8) {
-                showNotification('⚠️ تحذير: مصروفاتك تقترب من 80% من دخلك!', 'warning');
-            }
-            
-            if (budgetData.alerts.savingsAlert && savings < income * 0.1) {
-                showNotification('💰 نصيحة: حاول ادخار 10% على الأقل من دخلك', 'info');
-            }
-        }
-
-        // Initialize charts
-        function initializeCharts() {
-            // Balance Chart
-            const balanceCtx = document.getElementById('balanceChart');
-            if (balanceCtx && !charts.balance) {
-                charts.balance = new Chart(balanceCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['الواردات', 'المصروفات', 'المدخرات', 'الاستثمارات'],
-                        datasets: [{
-                            data: [0, 0, 0, 0],
-                            backgroundColor: ['#4facfe', '#fa709a', '#a8edea', '#ffecd2'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Expense Chart
-            const expenseCtx = document.getElementById('expenseChart');
-            if (expenseCtx && !charts.expense) {
-                charts.expense = new Chart(expenseCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            data: [],
-                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Investment Chart
-            const investmentCtx = document.getElementById('investmentChart');
-            if (investmentCtx && !charts.investment) {
-                charts.investment = new Chart(investmentCtx, {
-                    type: 'line',
-                    data: {
-                        labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-                        datasets: [{
-                            label: 'نمو الاستثمارات',
-                            data: [0, 0, 0, 0, 0, 0],
-                            borderColor: '#667eea',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        // Update charts
-        function updateCharts() {
-            if (!charts.balance) return;
-            
-            const { totalIncome, totalExpenses, totalSavings, totalInvestments } = calculateTotals();
-            
-            // Update balance chart
-            charts.balance.data.datasets[0].data = [totalIncome, totalExpenses, totalSavings, totalInvestments];
-            charts.balance.update();
-            
-            // Update expense chart
-            const expenseCategories = {};
-            budgetData.expenses.forEach(expense => {
-                const monthlyAmount = expense.amount * getMonthlyMultiplier(expense.frequency);
-                expenseCategories[expense.category] = (expenseCategories[expense.category] || 0) + monthlyAmount;
-            });
-            
-            charts.expense.data.labels = Object.keys(expenseCategories);
-            charts.expense.data.datasets[0].data = Object.values(expenseCategories);
-            charts.expense.update();
-            
-            // Update investment chart (simulated growth)
-            const investmentGrowth = Array.from({length: 6}, (_, i) => totalInvestments * (1 + i * 0.05));
-            charts.investment.data.datasets[0].data = investmentGrowth;
-            charts.investment.update();
-        }
-
-        // Export to Excel
-        function exportToExcel() {
-            if (budgetData.subscriptionPlan === 'basic') {
-                showNotification('هذه الميزة متاحة في الخطة المتقدمة وما فوق', 'warning');
-                return;
-            }
-            
-            const wb = XLSX.utils.book_new();
-            
-            // Income sheet
-            const incomeData = budgetData.income.map(item => ({
-                'مصدر الدخل': item.source,
-                'المبلغ': item.amount,
-                'التكرار': item.frequency,
-                'المبلغ الشهري': item.amount * getMonthlyMultiplier(item.frequency)
-            }));
-            const incomeWs = XLSX.utils.json_to_sheet(incomeData);
-            XLSX.utils.book_append_sheet(wb, incomeWs, 'الواردات');
-            
-            // Expenses sheet
-            const expenseData = budgetData.expenses.map(item => ({
-                'الفئة': item.category,
-                'الوصف': item.description,
-                'المبلغ': item.amount,
-                'التكرار': item.frequency,
-                'المبلغ الشهري': item.amount * getMonthlyMultiplier(item.frequency)
-            }));
-            const expenseWs = XLSX.utils.json_to_sheet(expenseData);
-            XLSX.utils.book_append_sheet(wb, expenseWs, 'المصروفات');
-            
-            // Summary sheet
-            const { totalIncome, totalExpenses, totalSavings, totalInvestments } = calculateTotals();
-            const summaryData = [
-                { 'البند': 'إجمالي الواردات', 'المبلغ': totalIncome },
-                { 'البند': 'إجمالي المصروفات', 'المبلغ': totalExpenses },
-                { 'البند': 'إجمالي المدخرات', 'المبلغ': totalSavings },
-                { 'البند': 'إجمالي الاستثمارات', 'المبلغ': totalInvestments },
-                { 'البند': 'الرصيد المتبقي', 'المبلغ': totalIncome - totalExpenses - totalSavings - totalInvestments }
-            ];
-            const summaryWs = XLSX.utils.json_to_sheet(summaryData);
-            XLSX.utils.book_append_sheet(wb, summaryWs, 'الملخص');
-            
-            XLSX.writeFile(wb, `تقرير_الميزانية_${new Date().toISOString().split('T')[0]}.xlsx`);
-            showNotification('تم تصدير البيانات بنجاح!', 'success');
-        }
-
-        // Export to PDF (simplified version)
-        function exportToPDF() {
-            if (budgetData.subscriptionPlan === 'basic') {
-                showNotification('هذه الميزة متاحة في الخطة المتقدمة وما فوق', 'warning');
-                return;
-            }
-            
-            const { totalIncome, totalExpenses, totalSavings, totalInvestments } = calculateTotals();
-            const remainingBalance = totalIncome - totalExpenses - totalSavings - totalInvestments;
-            
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <html dir="rtl">
-                <head>
-                    <title>تقرير الميزانية الشهرية</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .summary { margin-bottom: 30px; }
-                        .item { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
-                        .total { font-weight: bold; font-size: 18px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>تقرير الميزانية الشهرية</h1>
-                        <p>تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
-                    </div>
-                    <div class="summary">
-                        <h2>الملخص المالي</h2>
-                        <div class="item">إجمالي الواردات: ${formatAmount(totalIncome)}</div>
-                        <div class="item">إجمالي المصروفات: ${formatAmount(totalExpenses)}</div>
-                        <div class="item">إجمالي المدخرات: ${formatAmount(totalSavings)}</div>
-                        <div class="item">إجمالي الاستثمارات: ${formatAmount(totalInvestments)}</div>
-                        <div class="item total">الرصيد المتبقي: ${formatAmount(remainingBalance)}</div>
-                    </div>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.print();
-            
-            showNotification('تم إنشاء تقرير PDF!', 'success');
-        }
-
-        // Smart alerts setup
-        function enableSmartAlerts() {
-            // Bill reminders
-            if (budgetData.alerts.billReminder) {
-                budgetData.bills.forEach(bill => {
-                    const dueDate = new Date(bill.dueDate);
-                    const today = new Date();
-                    const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-                    
-                    if (daysUntilDue <= 3 && daysUntilDue > 0) {
-                        showNotification(`🔔 تذكير: فاتورة ${bill.name} مستحقة خلال ${daysUntilDue} أيام`, 'warning');
-                    }
-                });
-            }
-        }
-
-        // AI Financial Advice
-        function getAIAdvice() {
-            const { totalIncome, totalExpenses, totalSavings, totalInvestments } = calculateTotals();
-            const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
-            const expenseRate = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
-            
-            let advice = '';
-            
-            if (savingsRate < 10) {
-                advice += '💡 نصيحة: معدل ادخارك منخفض. حاول زيادة مدخراتك إلى 10-20% من دخلك.\n';
-            }
-            
-            if (expenseRate > 70) {
-                advice += '⚠️ تحذير: مصروفاتك مرتفعة. راجع النفقات غير الضرورية.\n';
-            }
-            
-            if (totalInvestments < totalSavings * 0.5) {
-                advice += '📈 اقتراح: فكر في استثمار جزء من مدخراتك لتحقيق عوائد أفضل.\n';
-            }
-            
-            if (advice === '') {
-                advice = '✅ ممتاز! وضعك المالي متوازن. استمر في هذا النهج الحكيم.';
-            }
-            
-            document.getElementById('aiAdvice').textContent = advice;
-            showNotification('تم تحديث النصائح الذكية!', 'success');
-        }
-
-        // Financial calculators
-        function applyBudgetRule() {
-            const { totalIncome } = calculateTotals();
-            if (totalIncome === 0) {
-                showNotification('أضف مصادر دخل أولاً لتطبيق القاعدة', 'warning');
-                return;
-            }
-            
-            const needs = totalIncome * 0.5;
-            const wants = totalIncome * 0.3;
-            const savings = totalIncome * 0.2;
-            
-            alert(`قاعدة 50/30/20 لدخلك:\n\nالضروريات (50%): ${formatAmount(needs)}\nالرغبات (30%): ${formatAmount(wants)}\nالمدخرات والاستثمار (20%): ${formatAmount(savings)}`);
-        }
-
-        function calculateEmergencyFund() {
-            const { totalExpenses } = calculateTotals();
-            const emergencyFund = totalExpenses * 6;
-            
-            alert(`صندوق الطوارئ المقترح:\n\n${formatAmount(emergencyFund)}\n\n(يكفي لـ 6 أشهر من المصروفات الأساسية)`);
-        }
-
-        function showCompoundCalculator() {
-            const initialAmount = prompt('أدخل المبلغ الأولي:');
-            const monthlyContribution = prompt('أدخل المساهمة الشهرية:');
-            const annualReturn = prompt('أدخل العائد السنوي المتوقع (%):', '8');
-            const years = prompt('أدخل عدد السنوات:', '10');
-            
-            if (initialAmount && monthlyContribution && annualReturn && years) {
-                const initial = parseFloat(initialAmount);
-                const monthly = parseFloat(monthlyContribution);
-                const rate = parseFloat(annualReturn) / 100 / 12;
-                const months = parseInt(years) * 12;
-                
-                const futureValue = initial * Math.pow(1 + rate, months) + 
-                                  monthly * ((Math.pow(1 + rate, months) - 1) / rate);
-                
-                alert(`نتيجة حاسبة التراكم المركب:\n\nالمبلغ بعد ${years} سنة: ${formatAmount(futureValue)}\nإجمالي المساهمات: ${formatAmount(initial + monthly * months)}\nالأرباح: ${formatAmount(futureValue - initial - monthly * months)}`);
-            }
-        }
-
-        // Portfolio analysis
-        function analyzePortfolio() {
-            const { totalInvestments } = calculateTotals();
-            if (totalInvestments === 0) {
-                showNotification('أضف استثمارات أولاً لتحليل المحفظة', 'warning');
-                return;
-            }
-            
-            const investmentTypes = {};
-            budgetData.investments.forEach(investment => {
-                const monthlyAmount = investment.amount * getMonthlyMultiplier(investment.frequency);
-                investmentTypes[investment.type] = (investmentTypes[investment.type] || 0) + monthlyAmount;
-            });
-            
-            let analysis = 'تحليل محفظة الاستثمارات:\n\n';
-            Object.entries(investmentTypes).forEach(([type, amount]) => {
-                const percentage = ((amount / totalInvestments) * 100).toFixed(1);
-                analysis += `${type}: ${formatAmount(amount)} (${percentage}%)\n`;
-            });
-            
-            analysis += '\n💡 نصيحة: تأكد من تنويع استثماراتك لتقليل المخاطر';
-            alert(analysis);
-        }
-
-        // Debt calculator
-        function debtCalculator() {
-            const debtAmount = prompt('أدخل مبلغ الدين:');
-            const interestRate = prompt('أدخل معدل الفائدة السنوي (%):', '15');
-            const monthlyPayment = prompt('أدخل الدفعة الشهرية:');
-            
-            if (debtAmount && interestRate && monthlyPayment) {
-                const debt = parseFloat(debtAmount);
-                const rate = parseFloat(interestRate) / 100 / 12;
-                const payment = parseFloat(monthlyPayment);
-                
-                const months = Math.log(1 + (debt * rate) / payment) / Math.log(1 + rate);
-                const totalPaid = payment * months;
-                const totalInterest = totalPaid - debt;
-                
-                alert(`حاسبة سداد الديون:\n\nمدة السداد: ${Math.ceil(months)} شهر\nإجمالي المدفوع: ${formatAmount(totalPaid)}\nإجمالي الفوائد: ${formatAmount(totalInterest)}`);
-            }
-        }
-
-        // Spending report
-        function generateSpendingReport() {
-            const { totalExpenses } = calculateTotals();
-            if (totalExpenses === 0) {
-                showNotification('أضف مصروفات أولاً لإنشاء التقرير', 'warning');
-                return;
-            }
-            
-            const expenseCategories = {};
-            budgetData.expenses.forEach(expense => {
-                const monthlyAmount = expense.amount * getMonthlyMultiplier(expense.frequency);
-                expenseCategories[expense.category] = (expenseCategories[expense.category] || 0) + monthlyAmount;
-            });
-            
-            let report = 'تقرير الإنفاق الشهري:\n\n';
-            Object.entries(expenseCategories)
-                .sort(([,a], [,b]) => b - a)
-                .forEach(([category, amount]) => {
-                    const percentage = ((amount / totalExpenses) * 100).toFixed(1);
-                    report += `${category}: ${formatAmount(amount)} (${percentage}%)\n`;
-                });
-            
-            alert(report);
-        }
-
-        // Add investment idea to portfolio
-        function addInvestmentIdea(type, suggestedAmount) {
-            document.getElementById('investmentType').value = type;
-            document.getElementById('investmentAmount').value = suggestedAmount;
-            document.getElementById('investmentDescription').value = `استثمار في ${type}`;
-            
-            // Switch to investments tab
-            document.querySelector('[data-tab="investments"]').click();
-            showNotification(`تم إضافة ${type} إلى نموذج الاستثمار`, 'success');
-        }
-
-        // Create enhanced item element
-        function createItemElement(item, type, index) {
-            const frequencyText = {
-                'daily': 'يومي',
-                'weekly': 'أسبوعي',
-                'monthly': 'شهري',
-                'quarterly': 'ربع سنوي',
-                'yearly': 'سنوي'
-            };
-
-            const monthlyAmount = item.amount * getMonthlyMultiplier(item.frequency);
-            
-            let extraInfo = '';
-            if (type === 'bills') {
-                const dueDate = new Date(item.dueDate);
-                const today = new Date();
-                const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-                extraInfo = `<p class="text-xs md:text-sm ${daysUntilDue <= 3 ? 'text-red-600' : 'text-gray-500'}">
-                    تاريخ الاستحقاق: ${dueDate.toLocaleDateString('ar-SA')} 
-                    ${daysUntilDue > 0 ? `(${daysUntilDue} يوم متبقي)` : '(متأخرة!)'}
-                </p>`;
-            }
-            
-            return `
-                <div class="flex items-center justify-between bg-gray-50 p-3 md:p-4 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div class="flex-1">
-                        <h4 class="font-semibold text-sm md:text-base">${item.source || item.category || item.goal || item.type || item.name}</h4>
-                        ${item.description ? `<p class="text-xs md:text-sm text-gray-600">${item.description}</p>` : ''}
-                        <p class="text-xs md:text-sm text-gray-500">${formatAmount(item.amount)} (${frequencyText[item.frequency]}) = ${formatAmount(monthlyAmount)} شهرياً</p>
-                        ${extraInfo}
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="editItem('${type}', ${index})" class="text-blue-500 hover:text-blue-700 p-2 text-sm">
-                            ✏️
-                        </button>
-                        <button onclick="removeItem('${type}', ${index})" class="text-red-500 hover:text-red-700 p-2 text-lg">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Edit item function
-        function editItem(type, index) {
-            const item = budgetData[type][index];
-            const newAmount = prompt('أدخل المبلغ الجديد:', item.amount);
-            
-            if (newAmount && !isNaN(newAmount)) {
-                budgetData[type][index].amount = parseFloat(newAmount);
-                updateAllDisplays();
-                saveData();
-                showNotification('تم تحديث البيانات بنجاح!', 'success');
-            }
-        }
-
-        // Update lists
-        function updateLists() {
-            document.getElementById('incomeList').innerHTML = budgetData.income.map((item, index) => 
-                createItemElement(item, 'income', index)).join('');
-            
-            document.getElementById('expenseList').innerHTML = budgetData.expenses.map((item, index) => 
-                createItemElement(item, 'expenses', index)).join('');
-            
-            document.getElementById('savingsList').innerHTML = budgetData.savings.map((item, index) => 
-                createItemElement(item, 'savings', index)).join('');
-            
-            document.getElementById('investmentList').innerHTML = budgetData.investments.map((item, index) => 
-                createItemElement(item, 'investments', index)).join('');
-                
-            document.getElementById('billList').innerHTML = budgetData.bills.map((item, index) => 
-                createItemElement(item, 'bills', index)).join('');
-        }
-
-        // Update all displays
-        function updateAllDisplays() {
-            updateSummary();
-            updateLists();
-            updateCharts();
-            enableSmartAlerts();
-        }
-
-        // Remove item
-        function removeItem(type, index) {
-            if (confirm('هل أنت متأكد من حذف هذا العنصر؟')) {
-                budgetData[type].splice(index, 1);
-                updateAllDisplays();
-                saveData();
-                showNotification('تم حذف العنصر بنجاح!', 'success');
-            }
-        }
-
-        // Currency change handler
-        document.getElementById('currencySelector').addEventListener('change', (e) => {
-            budgetData.currency = e.target.value;
-            updateAllDisplays();
-            saveData();
-        });
-
-        // Alert settings handlers
-        document.getElementById('budgetAlert').addEventListener('change', (e) => {
-            budgetData.alerts.budgetAlert = e.target.checked;
-            saveData();
-        });
-
-        document.getElementById('billReminder').addEventListener('change', (e) => {
-            budgetData.alerts.billReminder = e.target.checked;
-            saveData();
-        });
-
-        document.getElementById('savingsAlert').addEventListener('change', (e) => {
-            budgetData.alerts.savingsAlert = e.target.checked;
-            saveData();
-        });
-
-        // Tab switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tabName = btn.dataset.tab;
-                
-                // Update button styles
-                document.querySelectorAll('.tab-btn').forEach(b => {
-                    b.className = 'tab-btn flex-1 py-3 md:py-4 px-2 md:px-6 text-center font-semibold text-gray-500 hover:text-blue-600 text-xs md:text-base whitespace-nowrap';
-                });
-                btn.className = 'tab-btn flex-1 py-3 md:py-4 px-2 md:px-6 text-center font-semibold border-b-2 border-blue-500 text-blue-600 text-xs md:text-base whitespace-nowrap';
-                
-                // Show/hide content
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.add('hidden');
-                });
-                document.getElementById(`${tabName}-tab`).classList.remove('hidden');
-            });
-        });
-
-        // Enhanced form handlers
-        document.getElementById('incomeForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const source = document.getElementById('incomeSource').value;
-            const amount = parseFloat(document.getElementById('incomeAmount').value);
-            const frequency = document.getElementById('incomeFrequency').value;
-            
-            budgetData.income.push({ source, amount, frequency, date: new Date().toISOString() });
-            updateAllDisplays();
-            saveData();
-            e.target.reset();
-            showNotification('تم إضافة مصدر الدخل بنجاح!', 'success');
-        });
-
-        document.getElementById('expenseForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const category = document.getElementById('expenseCategory').value;
-            const description = document.getElementById('expenseDescription').value;
-            const amount = parseFloat(document.getElementById('expenseAmount').value);
-            const frequency = document.getElementById('expenseFrequency').value;
-            
-            budgetData.expenses.push({ category, description, amount, frequency, date: new Date().toISOString() });
-            updateAllDisplays();
-            saveData();
-            e.target.reset();
-            showNotification('تم إضافة المصروف بنجاح!', 'success');
-        });
-
-        document.getElementById('savingsForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const goal = document.getElementById('savingsGoal').value;
-            const amount = parseFloat(document.getElementById('savingsAmount').value);
-            const frequency = document.getElementById('savingsFrequency').value;
-            
-            budgetData.savings.push({ goal, amount, frequency, date: new Date().toISOString() });
-            updateAllDisplays();
-            saveData();
-            e.target.reset();
-            showNotification('تم إضافة هدف الادخار بنجاح!', 'success');
-        });
-
-        document.getElementById('investmentForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const type = document.getElementById('investmentType').value;
-            const description = document.getElementById('investmentDescription').value;
-            const amount = parseFloat(document.getElementById('investmentAmount').value);
-            const frequency = document.getElementById('investmentFrequency').value;
-            
-            budgetData.investments.push({ type, description, amount, frequency, date: new Date().toISOString() });
-            updateAllDisplays();
-            saveData();
-            e.target.reset();
-            showNotification('تم إضافة الاستثمار بنجاح!', 'success');
-        });
-
-        document.getElementById('billForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('billName').value;
-            const amount = parseFloat(document.getElementById('billAmount').value);
-            const dueDate = document.getElementById('billDueDate').value;
-            const frequency = document.getElementById('billFrequency').value;
-            
-            budgetData.bills.push({ name, amount, dueDate, frequency, date: new Date().toISOString() });
-            updateAllDisplays();
-            saveData();
-            e.target.reset();
-            showNotification('تم إضافة الفاتورة بنجاح!', 'success');
-        });
-
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', () => {
-            loadData();
-            initializeSubscription();
-            
-            // Initialize charts if premium user
-            if (budgetData.subscriptionPlan !== 'basic') {
-                setTimeout(initializeCharts, 1000);
-            }
-            
-            // Show welcome message
-            setTimeout(() => {
-                showNotification('مرحباً بك في صانع وعي المتقدم! 🎉', 'success');
-            }, 2000);
-        });
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'989cb13f243b2e45',t:'MTc1OTY2NDkzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
